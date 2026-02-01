@@ -6,6 +6,7 @@ function App() {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -13,6 +14,7 @@ function App() {
       setImage(file);
       setPreview(URL.createObjectURL(file));
       setResult(null);
+      setError(null);
     }
   };
 
@@ -27,23 +29,34 @@ function App() {
 
     setLoading(true);
     setResult(null);
+    setError(null);
 
     try {
-      const response = await fetch("/api/predict-leaf", {
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      if (!API_URL) {
+        throw new Error("VITE_API_URL is not defined");
+      }
+
+      const response = await fetch(`${API_URL}/predict-leaf`, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
-      setResult(data); // save the JSON object
+      setResult(data);
     } catch (err) {
-      console.error("Error contacting backend:", err);
-      alert("Error contacting backend");
+      console.error("Backend error:", err);
+      setError(
+        "Server is waking up or unreachable. Please wait 30–60 seconds and try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -62,6 +75,12 @@ function App() {
         {loading ? "Processing..." : "Predict"}
       </button>
 
+      {error && (
+        <div className="error">
+          <p>{error}</p>
+        </div>
+      )}
+
       {result && (
         <div className="result">
           <h2>Prediction Result</h2>
@@ -71,9 +90,10 @@ function App() {
           </p>
           <p>
             <strong>Confidence:</strong>{" "}
-            <span className="confidence">{(result.confidence * 100).toFixed(2)}%</span>
+            <span className="confidence">
+              {(result.confidence * 100).toFixed(2)}%
+            </span>
           </p>
-        
         </div>
       )}
     </div>
