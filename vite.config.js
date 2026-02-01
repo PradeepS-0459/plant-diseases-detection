@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+  base: "/plant-diseases-detection/",   // 👈 GitHub repo name
   plugins: [react()],
   server: {
     proxy: {
